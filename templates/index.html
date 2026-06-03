@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高考择校助手</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">高考择校助手</div>
+        <div class="nav-tabs">
+            <a href="#/recommend" class="nav-tab active" data-page="recommend">智能推荐</a>
+            <a href="#/search" class="nav-tab" data-page="search">找大学</a>
+        </div>
+        <div class="nav-actions">
+            <button class="btn-settings" id="btnSettings" title="设置">⚙</button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- 智能推荐页面 -->
+        <section id="page-recommend" class="page active">
+            <div class="page-header">
+                <h1>智能推荐</h1>
+                <p class="subtitle">输入你的高考成绩，AI 为你推荐冲-稳-保三档院校</p>
+            </div>
+
+            <div class="input-card">
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>省份</label>
+                        <select id="recProvince"></select>
+                    </div>
+                    <div class="input-group">
+                        <label>科类</label>
+                        <select id="recSubject"></select>
+                    </div>
+                    <div class="input-group">
+                        <label>分数</label>
+                        <input type="number" id="recScore" value="500" min="0" max="750">
+                    </div>
+                    <button class="btn-primary" id="btnRecommend">开始推荐</button>
+                </div>
+            </div>
+
+            <div id="recResults" class="results-container"></div>
+        </section>
+
+        <!-- 找大学页面 -->
+        <section id="page-search" class="page">
+            <div class="page-header">
+                <h1>找大学</h1>
+                <p class="subtitle">搜索你感兴趣的大学，了解真实的校园生活</p>
+            </div>
+
+            <div class="input-card">
+                <div class="search-row">
+                    <input type="text" id="searchName" placeholder="输入大学名称搜索..." class="search-input">
+                    <div class="filter-group">
+                        <select id="searchProvince">
+                            <option value="">全部省份</option>
+                        </select>
+                        <select id="searchType">
+                            <option value="">全部类型</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" id="btnSearch">搜索</button>
+                </div>
+            </div>
+
+            <div id="searchResults" class="results-container">
+                <p class="result-count" id="resultCount"></p>
+                <div id="universityList" class="university-list"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 大学详情弹窗 -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <h2 id="modalName"></h2>
+                    <p id="modalInfo"></p>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-fav" id="btnFav">收藏</button>
+                    <button class="btn-close" id="btnClose">&times;</button>
+                </div>
+            </div>
+
+            <div class="modal-body">
+                <!-- 基本信息 -->
+                <div class="section-card">
+                    <h3>基本信息</h3>
+                    <div id="basicInfo" class="info-grid"></div>
+                </div>
+
+                <!-- 校园生活 AI -->
+                <div class="section-card">
+                    <h3>校园生活 · AI 智能分析</h3>
+                    <div id="campusInfo" class="ai-content">
+                        <div class="loading-spinner" id="campusLoading">
+                            <div class="spinner"></div>
+                            <span>正在分析校园生活信息...</span>
+                        </div>
+                        <div id="campusText" class="ai-text" style="display:none"></div>
+                    </div>
+                </div>
+
+                <!-- 录取数据 -->
+                <div class="section-card">
+                    <h3>录取数据</h3>
+                    <div id="scoreTable"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置弹窗 -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2>设置</h2>
+                <button class="btn-close" id="btnCloseSettings">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item">
+                    <label>Claude API Key</label>
+                    <p class="setting-desc">AI 校园生活分析功能需要 API Key 支持</p>
+                    <input type="password" id="apiKeyInput" placeholder="请输入 API Key">
+                </div>
+                <div id="apiKeyStatus" class="api-status"></div>
+                <button class="btn-primary" id="btnSaveKey" style="width:100%;margin-top:12px">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>高考择校助手 · 推荐结果仅供参考，请结合实际情况综合考虑</p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/recommend.js"></script>
+    <script src="/static/js/search.js"></script>
+    <script src="/static/js/detail.js"></script>
+</body>
+</html>

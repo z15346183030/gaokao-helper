@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+config.json
+data/ai_cache/
+*.exe
+*.msi
+*.zip
+.cpolar/
+.DS_Store
