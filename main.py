@@ -133,7 +133,7 @@ async def configure_api_key(req: ApiKeyRequest):
 @app.get("/api/config/status")
 async def config_status():
     return {
-        "has_key": get_api_key() != "",
+        "has_key": bool(_runtime_api_key or os.environ.get("MIMO_API_KEY")),
         "ai_ready": claude_client is not None
     }
 
