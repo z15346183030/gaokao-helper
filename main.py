@@ -134,7 +134,9 @@ async def configure_api_key(req: ApiKeyRequest):
 async def config_status():
     return {
         "has_key": bool(_runtime_api_key or os.environ.get("MIMO_API_KEY")),
-        "ai_ready": claude_client is not None
+        "ai_ready": claude_client is not None,
+        "api_url": getattr(claude_client, 'api_url', 'N/A') if claude_client else 'N/A',
+        "version": "v3.1"
     }
 
 
