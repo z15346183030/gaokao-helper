@@ -143,16 +143,21 @@
                     headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
                     body: JSON.stringify({api_key: key})
                 });
-                const data = await res.json();
-                if (data.success) {
-                    showMsg('keyMsg', '保存成功，AI 功能已启用', true);
-                    document.getElementById('apiKeyInput').value = '';
-                    loadStatus();
-                } else {
-                    showMsg('keyMsg', '保存失败', false);
+                const text = await res.text();
+                try {
+                    const data = JSON.parse(text);
+                    if (data.success) {
+                        showMsg('keyMsg', '保存成功，AI 功能已启用', true);
+                        document.getElementById('apiKeyInput').value = '';
+                        loadStatus();
+                    } else {
+                        showMsg('keyMsg', '保存失败: ' + (data.detail || '未知错误'), false);
+                    }
+                } catch(parseErr) {
+                    showMsg('keyMsg', '服务器返回异常: ' + text.substring(0, 100), false);
                 }
             } catch(e) {
-                showMsg('keyMsg', '保存失败: ' + e.message, false);
+                showMsg('keyMsg', '网络错误: ' + e.message, false);
             }
         }
 
