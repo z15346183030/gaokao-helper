@@ -1,8 +1,10 @@
 import os
 import sys
+import secrets
+import hashlib
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
@@ -10,7 +12,7 @@ from typing import Optional
 
 from core.data_loader import DataLoader
 from core.favorites import FavoritesManager
-from core.config import get_api_key, set_api_key
+from core.config import get_api_key, set_api_key, load_config, save_config
 from ai.claude_client import ClaudeClient
 
 app = FastAPI(title="高考择校助手")
@@ -22,9 +24,20 @@ data_loader = DataLoader(data_dir)
 favorites_mgr = FavoritesManager(os.path.join(data_dir, "favorites.json"))
 claude_client = None
 
+# 管理员认证
+ADMIN_TOKEN = None
+
+def get_admin_password():
+    config = load_config()
+    return config.get("admin_password", "admin123")
+
+def verify_admin(request: Request):
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer ") or auth[7:] != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="未授权")
+
 def init_claude():
     global claude_client
-    # 优先从环境变量读取（管理员在 Railway 后台配置）
     api_key = os.environ.get("ANTHROPIC_API_KEY") or get_api_key()
     if api_key:
         try:
@@ -51,6 +64,12 @@ class ApiKeyRequest(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 async def index():
     with open(os.path.join(base_dir, "templates", "index.html"), "r", encoding="utf-8") as f:
+        return f.read()
+
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page():
+    with open(os.path.join(base_dir, "templates", "admin.html"), "r", encoding="utf-8") as f:
         return f.read()
 
 
@@ -115,6 +134,55 @@ async def config_status():
         "has_key": get_api_key() != "",
         "ai_ready": claude_client is not None
     }
+
+
+# ===== 管理员 API =====
+
+class AdminLoginRequest(BaseModel):
+    password: str
+
+class AdminApiRequest(BaseModel):
+    api_key: str
+
+class AdminPwdRequest(BaseModel):
+    password: str
+
+
+@app.post("/api/admin/login")
+async def admin_login(req: AdminLoginRequest):
+    global ADMIN_TOKEN
+    if req.password == get_admin_password():
+        ADMIN_TOKEN = secrets.token_hex(32)
+        return {"success": True, "token": ADMIN_TOKEN}
+    raise HTTPException(status_code=401, detail="密码错误")
+
+
+@app.get("/api/admin/status")
+async def admin_status(admin=Depends(verify_admin)):
+    cache_dir = os.path.join(data_dir, "ai_cache")
+    cache_count = len([f for f in os.listdir(cache_dir) if f.endswith(".json")]) if os.path.exists(cache_dir) else 0
+
+    return {
+        "has_key": bool(os.environ.get("ANTHROPIC_API_KEY") or get_api_key()),
+        "ai_ready": claude_client is not None,
+        "university_count": len(data_loader.universities),
+        "cache_count": cache_count,
+    }
+
+
+@app.post("/api/admin/api-key")
+async def admin_set_api_key(req: AdminApiRequest, admin=Depends(verify_admin)):
+    set_api_key(req.api_key)
+    init_claude()
+    return {"success": True}
+
+
+@app.post("/api/admin/password")
+async def admin_change_password(req: AdminPwdRequest, admin=Depends(verify_admin)):
+    config = load_config()
+    config["admin_password"] = req.password
+    save_config(config)
+    return {"success": True}
 
 
 @app.get("/api/favorites")
