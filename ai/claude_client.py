@@ -49,13 +49,14 @@ SYSTEM_PROMPT = """你是「高考择校助手」的 AI 顾问。你帮助高考
 回答要简洁、专业、有温度。使用中文。"""
 
 
-MIMO_API_URL = "https://api.xiaomimimo.com/v1/chat/completions"
-MIMO_MODEL = "mimo-v2.5"
+MIMO_API_URL = os.environ.get("MIMO_BASE_URL", "https://api.xiaomimimo.com/v1/chat/completions")
+MIMO_MODEL = os.environ.get("MIMO_MODEL", "mimo-v2.5")
 
 
 class ClaudeClient:
-    def __init__(self, api_key):
+    def __init__(self, api_key, base_url=None):
         self.api_key = api_key
+        self.api_url = base_url or MIMO_API_URL
         self.data_context = ""
         self.cache_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "ai_cache"
@@ -95,7 +96,7 @@ class ClaudeClient:
             ],
             "max_completion_tokens": max_tokens,
         }
-        resp = requests.post(MIMO_API_URL, headers=headers, json=body, timeout=60)
+        resp = requests.post(self.api_url, headers=headers, json=body, timeout=60)
         resp.raise_for_status()
         data = resp.json()
         return data["choices"][0]["message"]["content"]
@@ -134,7 +135,7 @@ class ClaudeClient:
         system = SYSTEM_PROMPT.format(data_context=self.data_context)
         try:
             resp = requests.post(
-                MIMO_API_URL,
+                self.api_url,
                 headers={"api-key": self.api_key, "Content-Type": "application/json"},
                 json={
                     "model": MIMO_MODEL,

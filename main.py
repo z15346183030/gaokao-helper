@@ -36,13 +36,14 @@ def verify_admin(request: Request):
     if not auth.startswith("Bearer ") or auth[7:] != ADMIN_TOKEN:
         raise HTTPException(status_code=401, detail="未授权")
 
-def init_claude(api_key_override=None):
+def init_claude(api_key_override=None, base_url_override=None):
     global claude_client, _runtime_api_key
     api_key = api_key_override or _runtime_api_key or os.environ.get("MIMO_API_KEY") or get_api_key()
+    base_url = base_url_override or os.environ.get("MIMO_BASE_URL")
     if api_key:
         _runtime_api_key = api_key
         try:
-            claude_client = ClaudeClient(api_key)
+            claude_client = ClaudeClient(api_key, base_url)
             claude_client.set_data_context(data_loader)
         except Exception:
             claude_client = None
@@ -144,6 +145,7 @@ class AdminLoginRequest(BaseModel):
 
 class AdminApiRequest(BaseModel):
     api_key: str
+    base_url: Optional[str] = None
 
 class AdminPwdRequest(BaseModel):
     password: str
@@ -175,7 +177,7 @@ async def admin_status(admin=Depends(verify_admin)):
 async def admin_set_api_key(req: AdminApiRequest, admin=Depends(verify_admin)):
     global _runtime_api_key
     _runtime_api_key = req.api_key
-    init_claude(api_key_override=req.api_key)
+    init_claude(api_key_override=req.api_key, base_url_override=req.base_url)
     return {"success": True, "ai_ready": claude_client is not None}
 
 

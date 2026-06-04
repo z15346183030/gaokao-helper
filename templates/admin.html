@@ -67,6 +67,8 @@
         <!-- API Key 配置 -->
         <div class="card">
             <h2>API Key 配置</h2>
+            <label>MIMO API URL</label>
+            <input type="text" id="apiUrlInput" placeholder="https://api.xiaomimimo.com/v1/chat/completions">
             <label>MIMO API Key</label>
             <input type="text" id="apiKeyInput" placeholder="输入你的 MIMO API Key">
             <button class="btn" onclick="saveKey()">保存 API Key</button>
@@ -136,12 +138,13 @@
 
         async function saveKey() {
             const key = document.getElementById('apiKeyInput').value.trim();
+            const url = document.getElementById('apiUrlInput').value.trim();
             if (!key) return;
             try {
                 const res = await fetch('/api/admin/api-key', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
-                    body: JSON.stringify({api_key: key})
+                    body: JSON.stringify({api_key: key, base_url: url || null})
                 });
                 const text = await res.text();
                 try {
