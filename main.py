@@ -24,7 +24,8 @@ claude_client = None
 
 def init_claude():
     global claude_client
-    api_key = get_api_key()
+    # 优先从环境变量读取（管理员在 Railway 后台配置）
+    api_key = os.environ.get("ANTHROPIC_API_KEY") or get_api_key()
     if api_key:
         try:
             claude_client = ClaudeClient(api_key)
