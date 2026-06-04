@@ -49,7 +49,7 @@ SYSTEM_PROMPT = """你是「高考择校助手」的 AI 顾问。你帮助高考
 回答要简洁、专业、有温度。使用中文。"""
 
 
-MIMO_API_URL = os.environ.get("MIMO_BASE_URL", "https://api.xiaomimimo.com/v1/chat/completions")
+MIMO_API_URL = os.environ.get("MIMO_BASE_URL", "https://token-plan-cn.xiaomimimo.com/v1/chat/completions")
 MIMO_MODEL = os.environ.get("MIMO_MODEL", "mimo-v2.5")
 
 
