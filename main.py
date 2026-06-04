@@ -26,20 +26,21 @@ claude_client = None
 
 # 管理员认证
 ADMIN_TOKEN = None
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
 
-def get_admin_password():
-    config = load_config()
-    return config.get("admin_password", "admin123")
+# 存储管理员设置的 API Key（内存，重启后需要重新设置）
+_runtime_api_key = None
 
 def verify_admin(request: Request):
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer ") or auth[7:] != ADMIN_TOKEN:
         raise HTTPException(status_code=401, detail="未授权")
 
-def init_claude():
-    global claude_client
-    api_key = os.environ.get("MIMO_API_KEY") or get_api_key()
+def init_claude(api_key_override=None):
+    global claude_client, _runtime_api_key
+    api_key = api_key_override or _runtime_api_key or os.environ.get("MIMO_API_KEY") or get_api_key()
     if api_key:
+        _runtime_api_key = api_key
         try:
             claude_client = ClaudeClient(api_key)
             claude_client.set_data_context(data_loader)
@@ -151,7 +152,7 @@ class AdminPwdRequest(BaseModel):
 @app.post("/api/admin/login")
 async def admin_login(req: AdminLoginRequest):
     global ADMIN_TOKEN
-    if req.password == get_admin_password():
+    if req.password == ADMIN_PASSWORD:
         ADMIN_TOKEN = secrets.token_hex(32)
         return {"success": True, "token": ADMIN_TOKEN}
     raise HTTPException(status_code=401, detail="密码错误")
@@ -163,7 +164,7 @@ async def admin_status(admin=Depends(verify_admin)):
     cache_count = len([f for f in os.listdir(cache_dir) if f.endswith(".json")]) if os.path.exists(cache_dir) else 0
 
     return {
-        "has_key": bool(os.environ.get("MIMO_API_KEY") or get_api_key()),
+        "has_key": bool(_runtime_api_key or os.environ.get("MIMO_API_KEY")),
         "ai_ready": claude_client is not None,
         "university_count": len(data_loader.universities),
         "cache_count": cache_count,
@@ -172,16 +173,16 @@ async def admin_status(admin=Depends(verify_admin)):
 
 @app.post("/api/admin/api-key")
 async def admin_set_api_key(req: AdminApiRequest, admin=Depends(verify_admin)):
-    set_api_key(req.api_key)
-    init_claude()
-    return {"success": True}
+    global _runtime_api_key
+    _runtime_api_key = req.api_key
+    init_claude(api_key_override=req.api_key)
+    return {"success": True, "ai_ready": claude_client is not None}
 
 
 @app.post("/api/admin/password")
 async def admin_change_password(req: AdminPwdRequest, admin=Depends(verify_admin)):
-    config = load_config()
-    config["admin_password"] = req.password
-    save_config(config)
+    global ADMIN_PASSWORD
+    ADMIN_PASSWORD = req.password
     return {"success": True}
 
 
