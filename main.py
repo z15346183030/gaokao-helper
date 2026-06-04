@@ -38,7 +38,7 @@ def verify_admin(request: Request):
 
 def init_claude():
     global claude_client
-    api_key = os.environ.get("ANTHROPIC_API_KEY") or get_api_key()
+    api_key = os.environ.get("MIMO_API_KEY") or get_api_key()
     if api_key:
         try:
             claude_client = ClaudeClient(api_key)
@@ -163,7 +163,7 @@ async def admin_status(admin=Depends(verify_admin)):
     cache_count = len([f for f in os.listdir(cache_dir) if f.endswith(".json")]) if os.path.exists(cache_dir) else 0
 
     return {
-        "has_key": bool(os.environ.get("ANTHROPIC_API_KEY") or get_api_key()),
+        "has_key": bool(os.environ.get("MIMO_API_KEY") or get_api_key()),
         "ai_ready": claude_client is not None,
         "university_count": len(data_loader.universities),
         "cache_count": cache_count,

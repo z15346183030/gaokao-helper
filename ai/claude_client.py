@@ -1,6 +1,6 @@
 import json
 import os
-import anthropic
+import requests
 
 
 CAMPUS_INFO_PROMPT = """你是校园生活信息顾问。请根据你所掌握的信息，详细介绍「{university}」的校园生活情况。
@@ -49,10 +49,13 @@ SYSTEM_PROMPT = """你是「高考择校助手」的 AI 顾问。你帮助高考
 回答要简洁、专业、有温度。使用中文。"""
 
 
+MIMO_API_URL = "https://api.xiaomimimo.com/v1/chat/completions"
+MIMO_MODEL = "mimo-v2.5"
+
+
 class ClaudeClient:
     def __init__(self, api_key):
-        self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = "claude-sonnet-4-20250514"
+        self.api_key = api_key
         self.data_context = ""
         self.cache_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "ai_cache"
@@ -79,6 +82,24 @@ class ClaudeClient:
 
         self.data_context = "\n".join(lines)
 
+    def _call_mimo(self, system_prompt, user_content, max_tokens=1500):
+        headers = {
+            "api-key": self.api_key,
+            "Content-Type": "application/json",
+        }
+        body = {
+            "model": MIMO_MODEL,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content},
+            ],
+            "max_completion_tokens": max_tokens,
+        }
+        resp = requests.post(MIMO_API_URL, headers=headers, json=body, timeout=60)
+        resp.raise_for_status()
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
+
     def _get_cache_path(self, university_name):
         safe_name = university_name.replace("/", "_").replace("\\", "_")
         return os.path.join(self.cache_dir, f"{safe_name}.json")
@@ -103,13 +124,26 @@ class ClaudeClient:
 
         prompt = CAMPUS_INFO_PROMPT.format(university=university_name)
         try:
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=1500,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            content = response.content[0].text
+            content = self._call_mimo("你是一个校园生活信息顾问。", prompt)
             self.save_campus_info_cache(university_name, content)
             return content
         except Exception as e:
             return f"获取信息失败: {str(e)}"
+
+    def chat(self, messages, stream=False):
+        system = SYSTEM_PROMPT.format(data_context=self.data_context)
+        try:
+            resp = requests.post(
+                MIMO_API_URL,
+                headers={"api-key": self.api_key, "Content-Type": "application/json"},
+                json={
+                    "model": MIMO_MODEL,
+                    "messages": [{"role": "system", "content": system}] + messages,
+                    "max_completion_tokens": 2048,
+                },
+                timeout=60,
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            return f"请求失败: {str(e)}"
