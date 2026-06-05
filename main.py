@@ -18,6 +18,9 @@ from ai.claude_client import ClaudeClient
 
 app = FastAPI(title="先看看")
 
+base_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(base_dir, "data")
+
 init_db()
 
 # 加载种子数据
@@ -29,7 +32,6 @@ def load_seed_data():
     with open(seed_path, "r", encoding="utf-8") as f:
         seed = json.load(f)
 
-    from core.database import get_dormitory, add_dormitory, get_transport, add_transport
     for d in seed.get("dormitory", []):
         if not get_dormitory(d["university"]):
             add_dormitory(d)
@@ -38,9 +40,6 @@ def load_seed_data():
             add_transport(t)
 
 load_seed_data()
-
-base_dir = os.path.dirname(os.path.abspath(__file__))
-data_dir = os.path.join(base_dir, "data")
 
 data_loader = DataLoader(data_dir)
 favorites_mgr = FavoritesManager(os.path.join(data_dir, "favorites.json"))
