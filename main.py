@@ -20,6 +20,25 @@ app = FastAPI(title="先看看")
 
 init_db()
 
+# 加载种子数据
+def load_seed_data():
+    import json
+    seed_path = os.path.join(data_dir, "seed_data.json")
+    if not os.path.exists(seed_path):
+        return
+    with open(seed_path, "r", encoding="utf-8") as f:
+        seed = json.load(f)
+
+    from core.database import get_dormitory, add_dormitory, get_transport, add_transport
+    for d in seed.get("dormitory", []):
+        if not get_dormitory(d["university"]):
+            add_dormitory(d)
+    for t in seed.get("transport", []):
+        if not get_transport(t["university"]):
+            add_transport(t)
+
+load_seed_data()
+
 base_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(base_dir, "data")
 
