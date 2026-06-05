@@ -110,6 +110,12 @@ async def recommend(req: RecommendRequest):
     return results
 
 
+@app.post("/api/bargain")
+async def bargain(req: RecommendRequest):
+    results = data_loader.get_bargain_schools(req.province, req.subject, req.score)
+    return results
+
+
 @app.get("/api/campus-info/{name}")
 async def get_campus_info(name: str):
     if not claude_client:

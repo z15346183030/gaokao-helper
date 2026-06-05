@@ -1,5 +1,5 @@
-// ===== 找大学页面 =====
-const Search = {
+// ===== 提前看学校页面 =====
+const Look = {
     init() {
         this.loadFilters();
         document.getElementById('btnSearch').addEventListener('click', () => this.doSearch());
@@ -11,12 +11,9 @@ const Search = {
 
     async loadFilters() {
         try {
-            const [provinces, types] = await Promise.all([
+            const [provinces, allUnis] = await Promise.all([
                 App.fetchJSON('/api/provinces'),
-                App.fetchJSON('/api/universities').then(data => {
-                    const t = new Set(data.map(u => u.type));
-                    return [...t].sort();
-                })
+                App.fetchJSON('/api/universities')
             ]);
 
             const provSelect = document.getElementById('searchProvince');
@@ -27,6 +24,7 @@ const Search = {
                 provSelect.appendChild(opt);
             });
 
+            const types = [...new Set(allUnis.map(u => u.type))].sort();
             const typeSelect = document.getElementById('searchType');
             types.forEach(t => {
                 const opt = document.createElement('option');
@@ -76,4 +74,4 @@ const Search = {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => Search.init());
+document.addEventListener('DOMContentLoaded', () => Look.init());

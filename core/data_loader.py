@@ -195,3 +195,45 @@ class DataLoader:
             & (self.score_rankings["subject_type"] == subject_type)
         ]
         return sorted(rankings["year"].unique().tolist(), reverse=True)
+
+    def get_bargain_schools(self, province, subject_type, score):
+        """找出有捡漏机会的学校：历年分数波动大，且最低分低于用户分数"""
+        history = self.admission_history[
+            (self.admission_history["province"] == province)
+            & (self.admission_history["subject_type"] == subject_type)
+        ]
+
+        if history.empty:
+            return []
+
+        uni_groups = history.groupby("university")
+        results = []
+
+        for name, group in uni_groups:
+            years_data = group.sort_values("year").to_dict("records")
+            if len(years_data) < 2:
+                continue
+
+            scores_list = [d["min_score"] for d in years_data]
+            min_score = min(scores_list)
+            max_score = max(scores_list)
+            volatility = max_score - min_score
+
+            # 条件1：最低分低于用户分数（有机会录取）
+            # 条件2：分数波动 >= 10分（有捡漏空间）
+            if min_score <= score and volatility >= 10:
+                uni_info = self.universities[self.universities["name"] == name]
+                if uni_info.empty:
+                    continue
+                uni_data = uni_info.iloc[0].to_dict()
+                uni_data["history"] = [
+                    {"year": d["year"], "min_score": d["min_score"], "min_rank": d["min_rank"]}
+                    for d in years_data
+                ]
+                uni_data["volatility"] = volatility
+                uni_data["min_score"] = min_score
+                uni_data["max_score"] = max_score
+                results.append(uni_data)
+
+        results.sort(key=lambda x: x["volatility"], reverse=True)
+        return results[:30]
