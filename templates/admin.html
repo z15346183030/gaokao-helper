@@ -75,6 +75,67 @@
             <div class="msg" id="keyMsg"></div>
         </div>
 
+        <!-- 数据统计 -->
+        <div class="card">
+            <h2>数据统计</h2>
+            <div id="dataStats"></div>
+        </div>
+
+        <!-- 宿舍数据管理 -->
+        <div class="card">
+            <h2>添加宿舍信息</h2>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div><label>大学名称</label><input type="text" id="dormUni" placeholder="如：北京大学"></div>
+                <div><label>校区</label><input type="text" id="dormCampus" placeholder="如：燕园校区"></div>
+                <div><label>房型</label><input type="text" id="dormType" placeholder="如：四人间"></div>
+                <div><label>床位数</label><input type="number" id="dormBed" placeholder="4"></div>
+                <div><label>费用/年</label><input type="text" id="dormCost" placeholder="如：1200元"></div>
+                <div><label>面积</label><input type="text" id="dormArea" placeholder="如：30㎡"></div>
+            </div>
+            <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap">
+                <label><input type="checkbox" id="dormAC"> 空调</label>
+                <label><input type="checkbox" id="dormBath"> 独立卫浴</label>
+                <label><input type="checkbox" id="dormBalcony"> 阳台</label>
+                <label><input type="checkbox" id="dormHot"> 热水</label>
+            </div>
+            <div style="margin-top:12px">
+                <label>配套设施</label><input type="text" id="dormFacilities" placeholder="如：洗衣机、饮水机、衣柜">
+            </div>
+            <div style="margin-top:12px">
+                <label>备注</label><input type="text" id="dormNote" placeholder="其他说明">
+            </div>
+            <button class="btn" onclick="addDorm()" style="margin-top:12px">添加宿舍信息</button>
+            <div class="msg" id="dormMsg"></div>
+        </div>
+
+        <!-- 交通数据管理 -->
+        <div class="card">
+            <h2>添加交通信息</h2>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div><label>大学名称</label><input type="text" id="transUni" placeholder="如：北京大学"></div>
+                <div><label>校区</label><input type="text" id="transCampus" placeholder="如：燕园校区"></div>
+                <div><label>位置类型</label><input type="text" id="transType" placeholder="如：市区/郊区"></div>
+                <div><label>最近地铁站</label><input type="text" id="transMetro" placeholder="如：北京大学东门站"></div>
+                <div><label>地铁距离</label><input type="text" id="transMetroDist" placeholder="如：步行5分钟"></div>
+                <div><label>最近公交站</label><input type="text" id="transBus" placeholder="如：北京大学站"></div>
+                <div><label>公交距离</label><input type="text" id="transBusDist" placeholder="如：步行3分钟"></div>
+                <div><label>到市中心</label><input type="text" id="transCenter" placeholder="如：地铁30分钟"></div>
+                <div><label>到火车站</label><input type="text" id="transStation" placeholder="如：地铁40分钟"></div>
+                <div><label>到机场</label><input type="text" id="transAirport" placeholder="如：打车1小时"></div>
+            </div>
+            <div style="margin-top:12px">
+                <label>周边商业</label><input type="text" id="transMalls" placeholder="如：中关村、五道口购物中心">
+            </div>
+            <div style="margin-top:12px">
+                <label>周边医疗</label><input type="text" id="transHospital" placeholder="如：北医三院">
+            </div>
+            <div style="margin-top:12px">
+                <label>备注</label><input type="text" id="transNote" placeholder="其他说明">
+            </div>
+            <button class="btn" onclick="addTrans()" style="margin-top:12px">添加交通信息</button>
+            <div class="msg" id="transMsg"></div>
+        </div>
+
         <!-- 管理员密码 -->
         <div class="card">
             <h2>修改管理员密码</h2>
@@ -190,6 +251,92 @@
         document.getElementById('adminPwd').addEventListener('keypress', e => {
             if (e.key === 'Enter') doLogin();
         });
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/admin/stats', {
+                    headers: {'Authorization': 'Bearer ' + token}
+                });
+                const data = await res.json();
+                document.getElementById('dataStats').innerHTML = `
+                    <div class="status-row"><span>大学数据</span><span class="status-ok">${data.university_count} 所</span></div>
+                    <div class="status-row"><span>宿舍信息</span><span>${data.dormitory_count} 条（${data.dormitory_universities} 所大学）</span></div>
+                    <div class="status-row"><span>交通信息</span><span>${data.transport_count} 条（${data.transport_universities} 所大学）</span></div>
+                    <div class="status-row"><span>AI 功能</span><span class="${data.ai_ready ? 'status-ok' : 'status-err'}">${data.ai_ready ? '正常' : '未配置'}</span></div>
+                `;
+            } catch(e) { console.error(e); }
+        }
+
+        async function addDorm() {
+            const data = {
+                university: document.getElementById('dormUni').value.trim(),
+                campus: document.getElementById('dormCampus').value.trim(),
+                room_type: document.getElementById('dormType').value.trim(),
+                bed_count: parseInt(document.getElementById('dormBed').value) || 0,
+                cost_per_year: document.getElementById('dormCost').value.trim(),
+                area: document.getElementById('dormArea').value.trim(),
+                has_ac: document.getElementById('dormAC').checked ? 1 : 0,
+                has_bathroom: document.getElementById('dormBath').checked ? 1 : 0,
+                has_balcony: document.getElementById('dormBalcony').checked ? 1 : 0,
+                has_hotwater: document.getElementById('dormHot').checked ? 1 : 0,
+                facilities: document.getElementById('dormFacilities').value.trim(),
+                note: document.getElementById('dormNote').value.trim(),
+            };
+            if (!data.university) { showMsg('dormMsg', '请填写大学名称', false); return; }
+            try {
+                const res = await fetch('/api/admin/dormitory', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showMsg('dormMsg', '添加成功！', true);
+                    ['dormCampus','dormType','dormBed','dormCost','dormArea','dormFacilities','dormNote'].forEach(id => document.getElementById(id).value = '');
+                    ['dormAC','dormBath','dormBalcony','dormHot'].forEach(id => document.getElementById(id).checked = false);
+                    loadStats();
+                }
+            } catch(e) { showMsg('dormMsg', '添加失败: ' + e.message, false); }
+        }
+
+        async function addTrans() {
+            const data = {
+                university: document.getElementById('transUni').value.trim(),
+                campus: document.getElementById('transCampus').value.trim(),
+                location_type: document.getElementById('transType').value.trim(),
+                nearest_metro: document.getElementById('transMetro').value.trim(),
+                metro_distance: document.getElementById('transMetroDist').value.trim(),
+                nearest_bus: document.getElementById('transBus').value.trim(),
+                bus_distance: document.getElementById('transBusDist').value.trim(),
+                to_center: document.getElementById('transCenter').value.trim(),
+                to_station: document.getElementById('transStation').value.trim(),
+                to_airport: document.getElementById('transAirport').value.trim(),
+                nearby_malls: document.getElementById('transMalls').value.trim(),
+                nearby_hospital: document.getElementById('transHospital').value.trim(),
+                note: document.getElementById('transNote').value.trim(),
+            };
+            if (!data.university) { showMsg('transMsg', '请填写大学名称', false); return; }
+            try {
+                const res = await fetch('/api/admin/transport', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showMsg('transMsg', '添加成功！', true);
+                    ['transCampus','transType','transMetro','transMetroDist','transBus','transBusDist','transCenter','transStation','transAirport','transMalls','transHospital','transNote'].forEach(id => document.getElementById(id).value = '');
+                    loadStats();
+                }
+            } catch(e) { showMsg('transMsg', '添加失败: ' + e.message, false); }
+        }
+
+        // 登录后加载统计
+        const origLoadStatus = loadStatus;
+        loadStatus = async function() {
+            await origLoadStatus();
+            await loadStats();
+        };
     </script>
 </body>
 </html>

@@ -13,9 +13,12 @@ from typing import Optional
 from core.data_loader import DataLoader
 from core.favorites import FavoritesManager
 from core.config import get_api_key, set_api_key, load_config, save_config
+from core.database import init_db, get_dormitory, add_dormitory, update_dormitory, delete_dormitory, get_transport, add_transport, update_transport, delete_transport, get_stats
 from ai.claude_client import ClaudeClient
 
-app = FastAPI(title="高考择校助手")
+app = FastAPI(title="先看看")
+
+init_db()
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(base_dir, "data")
@@ -193,6 +196,64 @@ async def admin_set_api_key(req: AdminApiRequest, admin=Depends(verify_admin)):
 async def admin_change_password(req: AdminPwdRequest, admin=Depends(verify_admin)):
     global ADMIN_PASSWORD
     ADMIN_PASSWORD = req.password
+    return {"success": True}
+
+
+@app.get("/api/admin/stats")
+async def admin_stats(admin=Depends(verify_admin)):
+    stats = get_stats()
+    stats["university_count"] = len(data_loader.universities)
+    stats["ai_ready"] = claude_client is not None
+    return stats
+
+
+# ===== 宿舍数据 API =====
+
+@app.get("/api/dormitory/{name}")
+async def get_dormitory_data(name: str):
+    return get_dormitory(name)
+
+
+@app.post("/api/admin/dormitory")
+async def admin_add_dormitory(data: dict, admin=Depends(verify_admin)):
+    dorm_id = add_dormitory(data)
+    return {"success": True, "id": dorm_id}
+
+
+@app.put("/api/admin/dormitory/{dorm_id}")
+async def admin_update_dormitory(dorm_id: int, data: dict, admin=Depends(verify_admin)):
+    update_dormitory(dorm_id, data)
+    return {"success": True}
+
+
+@app.delete("/api/admin/dormitory/{dorm_id}")
+async def admin_delete_dormitory(dorm_id: int, admin=Depends(verify_admin)):
+    delete_dormitory(dorm_id)
+    return {"success": True}
+
+
+# ===== 交通数据 API =====
+
+@app.get("/api/transport/{name}")
+async def get_transport_data(name: str):
+    return get_transport(name)
+
+
+@app.post("/api/admin/transport")
+async def admin_add_transport(data: dict, admin=Depends(verify_admin)):
+    trans_id = add_transport(data)
+    return {"success": True, "id": trans_id}
+
+
+@app.put("/api/admin/transport/{trans_id}")
+async def admin_update_transport(trans_id: int, data: dict, admin=Depends(verify_admin)):
+    update_transport(trans_id, data)
+    return {"success": True}
+
+
+@app.delete("/api/admin/transport/{trans_id}")
+async def admin_delete_transport(trans_id: int, admin=Depends(verify_admin)):
+    delete_transport(trans_id)
     return {"success": True}
 
 
