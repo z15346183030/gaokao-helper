@@ -33,13 +33,16 @@ const Detail = {
 
             this.renderScoreTable(detail.current_scores || []);
 
-            // 同时加载数据库宿舍/交通 和 AI 分析
-            this.loadDbInfo(name);
+            // 先加载数据库数据（快速）
+            await this.loadDbInfo(name);
+
+            // 再异步加载 AI 分析（可能慢）
             this.loadCampusInfo(name);
 
         } catch (e) {
             document.getElementById('modalName').textContent = '加载失败';
             document.getElementById('modalInfo').textContent = e.message;
+            document.getElementById('campusLoading').innerHTML = `<span style="color:#FF6B6B">加载失败: ${e.message}</span>`;
         }
     },
 
@@ -91,10 +94,10 @@ const Detail = {
                         html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">`;
                         if (d.room_type) html += `<div>🛏️ ${d.room_type}</div>`;
                         if (d.bed_count) html += `<div>👥 ${d.bed_count}人间</div>`;
-                        if (d.has_ac) html += `<div>${d.has_ac ? '✅' : '❌'} 空调</div>`;
-                        if (d.has_bathroom) html += `<div>${d.has_bathroom ? '✅' : '❌'} 独立卫浴</div>`;
-                        if (d.has_balcony) html += `<div>${d.has_balcony ? '✅' : '❌'} 阳台</div>`;
-                        if (d.has_hotwater) html += `<div>${d.has_hotwater ? '✅' : '❌'} 热水</div>`;
+                        html += `<div>${d.has_ac ? '✅' : '❌'} 空调</div>`;
+                        html += `<div>${d.has_bathroom ? '✅' : '❌'} 独立卫浴</div>`;
+                        html += `<div>${d.has_balcony ? '✅' : '❌'} 阳台</div>`;
+                        html += `<div>${d.has_hotwater ? '✅' : '❌'} 热水</div>`;
                         if (d.cost_per_year) html += `<div>💰 ${d.cost_per_year}/年</div>`;
                         if (d.area) html += `<div>📐 ${d.area}</div>`;
                         html += `</div>`;
@@ -127,40 +130,50 @@ const Detail = {
                     html += '</div>';
                 }
 
-                // 在 AI 内容前插入数据库信息
+                // 显示数据库数据，隐藏 loading
                 const campusText = document.getElementById('campusText');
                 campusText.innerHTML = html;
                 campusText.style.display = 'block';
                 document.getElementById('campusLoading').style.display = 'none';
+
+                return true; // 有数据
             }
         } catch (e) {
             console.error('加载数据库信息失败:', e);
         }
+        return false; // 无数据
     },
 
     async loadCampusInfo(name) {
-        // 如果数据库已有数据，AI 内容追加在后面
         try {
             const data = await App.fetchJSON(`/api/campus-info/${encodeURIComponent(name)}`);
             const campusText = document.getElementById('campusText');
-            const existingHtml = campusText.innerHTML;
+            const campusLoading = document.getElementById('campusLoading');
 
+            // 确保 loading 隐藏
+            campusLoading.style.display = 'none';
+            campusText.style.display = 'block';
+
+            const existingHtml = campusText.innerHTML;
             if (existingHtml && existingHtml.trim()) {
                 // 数据库有数据，AI 内容追加
                 campusText.innerHTML = existingHtml +
                     '<hr style="margin:16px 0;border:none;border-top:1px solid #E8E8E8">' +
                     '<h4 style="font-size:14px;font-weight:bold;color:#F57F17;margin-bottom:10px">🤖 AI 综合分析</h4>' +
-                    '<div style="white-space:pre-wrap;line-height:1.8;color:#333">' + data.content + '</div>';
+                    '<div style="white-space:pre-wrap;line-height:1.8;color:#333;font-size:14px">' + data.content + '</div>';
             } else {
                 // 数据库没数据，直接显示 AI 内容
-                document.getElementById('campusLoading').style.display = 'none';
-                campusText.style.display = 'block';
                 campusText.textContent = data.content;
             }
         } catch (e) {
             const campusLoading = document.getElementById('campusLoading');
-            if (campusLoading.style.display !== 'none') {
-                campusLoading.innerHTML = `<span style="color:#FF6B6B">AI 分析失败: ${e.message}</span>`;
+            const campusText = document.getElementById('campusText');
+
+            // 如果数据库已经显示了数据，AI 失败不影响
+            if (campusText.style.display === 'block' && campusText.innerHTML.trim()) {
+                campusText.innerHTML += '<div style="margin-top:12px;padding:8px;background:#FFF5F5;border-radius:8px;color:#FF6B6B;font-size:12px">AI 分析暂时不可用</div>';
+            } else {
+                campusLoading.innerHTML = `<span style="color:#FF6B6B">加载失败: ${e.message}</span>`;
             }
         }
     }
