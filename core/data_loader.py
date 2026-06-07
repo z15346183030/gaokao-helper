@@ -36,7 +36,7 @@ class DataLoader:
         scores = self.admission_scores[self.admission_scores["province"] == province]
         return sorted(scores["subject_type"].unique().tolist())
 
-    def search_universities(self, name="", province="", university_type="", tag=""):
+    def search_universities(self, name="", province="", university_type="", tag="", limit=100):
         df = self.universities.copy()
         if name:
             df = df[df["name"].str.contains(name, na=False)]
@@ -46,7 +46,7 @@ class DataLoader:
             df = df[df["type"] == university_type]
         if tag:
             df = df[df["tags"].str.contains(tag, na=False)]
-        return df.to_dict("records")
+        return df.head(limit).to_dict("records")
 
     def get_university_detail(self, name):
         uni = self.universities[self.universities["name"] == name]
