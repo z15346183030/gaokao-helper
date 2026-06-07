@@ -14,20 +14,20 @@ class DataLoader:
 
     def _load_all(self):
         self.universities = pd.read_csv(
-            os.path.join(self.data_dir, "universities.csv"), encoding="utf-8"
-        )
+            os.path.join(self.data_dir, "universities.csv"), encoding="utf-8", on_bad_lines="skip"
+        ).fillna("")
         self.admission_scores = pd.read_csv(
-            os.path.join(self.data_dir, "admission_scores.csv"), encoding="utf-8"
-        )
+            os.path.join(self.data_dir, "admission_scores.csv"), encoding="utf-8", on_bad_lines="skip"
+        ).fillna("")
         self.admission_history = pd.read_csv(
-            os.path.join(self.data_dir, "admission_history.csv"), encoding="utf-8"
-        )
+            os.path.join(self.data_dir, "admission_history.csv"), encoding="utf-8", on_bad_lines="skip"
+        ).fillna("")
         self.score_rankings = pd.read_csv(
-            os.path.join(self.data_dir, "score_rankings.csv"), encoding="utf-8"
-        )
+            os.path.join(self.data_dir, "score_rankings.csv"), encoding="utf-8", on_bad_lines="skip"
+        ).fillna("")
         self.provinces = pd.read_csv(
-            os.path.join(self.data_dir, "provinces.csv"), encoding="utf-8"
-        )
+            os.path.join(self.data_dir, "provinces.csv"), encoding="utf-8", on_bad_lines="skip"
+        ).fillna("")
 
     def get_province_list(self):
         return self.provinces["name"].tolist()
@@ -37,16 +37,19 @@ class DataLoader:
         return sorted(scores["subject_type"].unique().tolist())
 
     def search_universities(self, name="", province="", university_type="", tag="", limit=100):
-        df = self.universities.copy()
-        if name:
-            df = df[df["name"].str.contains(name, na=False)]
-        if province:
-            df = df[df["province"] == province]
-        if university_type:
-            df = df[df["type"] == university_type]
-        if tag:
-            df = df[df["tags"].str.contains(tag, na=False)]
-        return df.head(limit).to_dict("records")
+        try:
+            df = self.universities.copy()
+            if name:
+                df = df[df["name"].fillna("").str.contains(name, na=False)]
+            if province:
+                df = df[df["province"].fillna("") == province]
+            if university_type:
+                df = df[df["type"].fillna("") == university_type]
+            if tag:
+                df = df[df["tags"].fillna("").str.contains(tag, na=False)]
+            return df.head(limit).to_dict("records")
+        except Exception as e:
+            return []
 
     def get_university_detail(self, name):
         uni = self.universities[self.universities["name"] == name]
