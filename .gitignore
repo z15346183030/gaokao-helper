@@ -7,3 +7,8 @@ data/ai_cache/
 *.zip
 .cpolar/
 .DS_Store
+*.db
+db/data.db
+.env
+.venv/
+venv/

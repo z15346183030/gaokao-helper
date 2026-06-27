@@ -4,6 +4,9 @@ import os
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "db", "data.db")
 
+ALLOWED_DORMITORY_FIELDS = {"university", "campus", "room_type", "has_ac", "has_bathroom", "has_balcony", "has_hotwater", "cost_per_year", "bed_count", "area", "facilities", "rating", "note"}
+ALLOWED_TRANSPORT_FIELDS = {"university", "campus", "nearest_metro", "metro_distance", "nearest_bus", "bus_distance", "to_center", "to_station", "to_airport", "location_type", "nearby_malls", "nearby_hospital", "note"}
+
 
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
@@ -102,15 +105,16 @@ def add_dormitory(data):
 
 
 def update_dormitory(dorm_id, data):
+    filtered = {k: v for k, v in data.items() if k in ALLOWED_DORMITORY_FIELDS}
     conn = get_conn()
     fields = []
     values = []
     for key in ["campus", "room_type", "has_ac", "has_bathroom", "has_balcony",
                  "has_hotwater", "cost_per_year", "bed_count", "area", "facilities",
                  "rating", "note"]:
-        if key in data:
+        if key in filtered:
             fields.append(f"{key} = ?")
-            values.append(data[key])
+            values.append(filtered[key])
     if fields:
         fields.append("updated_at = CURRENT_TIMESTAMP")
         values.append(dorm_id)
@@ -168,15 +172,16 @@ def add_transport(data):
 
 
 def update_transport(trans_id, data):
+    filtered = {k: v for k, v in data.items() if k in ALLOWED_TRANSPORT_FIELDS}
     conn = get_conn()
     fields = []
     values = []
     for key in ["campus", "nearest_metro", "metro_distance", "nearest_bus",
                  "bus_distance", "to_center", "to_station", "to_airport",
                  "location_type", "nearby_malls", "nearby_hospital", "note"]:
-        if key in data:
+        if key in filtered:
             fields.append(f"{key} = ?")
-            values.append(data[key])
+            values.append(filtered[key])
     if fields:
         fields.append("updated_at = CURRENT_TIMESTAMP")
         values.append(trans_id)

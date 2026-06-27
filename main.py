@@ -47,7 +47,9 @@ claude_client = None
 
 # 管理员认证
 ADMIN_TOKEN = None
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
+if not ADMIN_PASSWORD:
+    print("警告: 未设置 ADMIN_PASSWORD 环境变量，管理后台已禁用")
 
 # 存储管理员设置的 API Key（内存，重启后需要重新设置）
 _runtime_api_key = None
